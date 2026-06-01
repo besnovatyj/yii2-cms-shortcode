@@ -1,0 +1,32 @@
+/*
+ * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
+ */
+
+.gallery {
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.gallery h2 {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+}
+
+.gallery-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.gallery-image {
+    max-width: 150px;
+    height: auto;
+    border-radius: 3px;
+}
+
+.gallery-content {
+    margin-top: 10px;
+    font-style: italic;
+}

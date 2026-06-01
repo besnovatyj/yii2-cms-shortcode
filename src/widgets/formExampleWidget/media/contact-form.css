@@ -1,0 +1,50 @@
+/*
+ * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
+ */
+
+.contact-form {
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-width: 500px;
+}
+
+.contact-form h2 {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+}
+
+.contact-form-inner .form-group {
+    margin-bottom: 15px;
+}
+
+.contact-form-inner input,
+.contact-form-inner textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.contact-form-inner textarea {
+    resize: vertical;
+}
+
+.contact-form-inner .btn {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.contact-form-inner .btn:hover {
+    background-color: #0056b3;
+}
+
+.form-content {
+    margin-top: 10px;
+    font-style: italic;
+}
