@@ -1,6 +1,5 @@
 <?php
 
-
 /*
  * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
  */
@@ -8,14 +7,21 @@
 namespace Besnovatyj\Shortcode;
 
 use Besnovatyj\Shortcode\components\ShortcodeManager;
-use common\components\module\BaseModule;
+use common\components\module\CmsModule;
+use modules\modmanNew\contract\DeclaresModule;
+use modules\modmanNew\contract\ProvidesComponents;
+use modules\modmanNew\contract\ProvidesMigrations;
+use modules\modmanNew\contract\ProvidesAdminMenu;
 use Yii;
 use yii\helpers\Url;
 
-class Module extends BaseModule
+class Module extends CmsModule implements
+    DeclaresModule, ProvidesComponents,
+    ProvidesMigrations, ProvidesAdminMenu
 {
-    public const true EDITABLE = true;
-
+    public const bool EDITABLE = true;
+    public const string VERSION = '1.0.0';
+    public const string MODULE_ID = 'Shortcode';
     public function init(): void
     {
         parent::init();
@@ -30,35 +36,12 @@ class Module extends BaseModule
         ];
     }
 
-    public static function getAdminMenu(): array
-    {
-        return require __DIR__ . '/config/adminMenu.php';
-    }
-
-    public static function getConfig(): array
-    {
-        return require __DIR__ . '/config/config.php';
-    }
-
-    public static function getOptions(): array
-    {
-        return require __DIR__ . '/config/options.php';
-    }
-
-    public static function getDependencies(): array
-    {
-        return require __DIR__ . '/config/dependencies.php';
-    }
-
-    public static function getComponentsConfig(): array
-    {
-        return [
-            'shortcode' => [
-                'class' => ShortcodeManager::class,
-//                'cacheId' => 'cacheIdTest',
-//                'items' => ['qwerty-1', 'qwerty-2'],
-            ],
-        ];
-    }
-
+    public static function moduleId(): string { return self::MODULE_ID; }
+    public static function moduleVersion(): string { return self::VERSION; }
+    public static function isEditable(): bool { return self::EDITABLE; }
+    public static function adminMenu(): array       { return require __DIR__.'/config/adminMenu.php'; }
+    public static function moduleConfig(): array { return require __DIR__.'/config/config.php'; }
+    public static function migrationPath(): string       { return __DIR__.'/migrations'; }
+    public static function migrationNamespace(): ?string { return __NAMESPACE__.'\\migrations'; }
+    public static function components(): array      { return ['shortcode' => ['class' => ShortcodeManager::class]]; }
 }
