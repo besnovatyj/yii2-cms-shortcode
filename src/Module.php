@@ -8,10 +8,10 @@ namespace Besnovatyj\Shortcode;
 
 use Besnovatyj\Shortcode\components\ShortcodeManager;
 use common\components\module\CmsModule;
-use modules\modman\contract\DeclaresModule;
-use modules\modman\contract\ProvidesComponents;
-use modules\modman\contract\ProvidesMigrations;
-use modules\modman\contract\ProvidesAdminMenu;
+use Besnovatyj\Contracts\module\DeclaresModule;
+use Besnovatyj\Contracts\module\ProvidesComponents;
+use Besnovatyj\Contracts\module\ProvidesMigrations;
+use Besnovatyj\Contracts\module\ProvidesAdminMenu;
 use Yii;
 use yii\helpers\Url;
 
