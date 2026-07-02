@@ -7,7 +7,7 @@
 
 namespace Besnovatyj\Shortcode\migrations;
 
-use common\components\migration\BaseMigration;
+use Besnovatyj\Kernel\migration\BaseMigration;
 use yii\base\NotSupportedException;
 
 /** 'm<YYMMDD_HHMMSS>_<n>' */
