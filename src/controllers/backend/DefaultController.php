@@ -20,7 +20,7 @@ use yii\web\Response;
 
 class DefaultController extends \yii\web\Controller
 {
-    use \common\components\controller\ControllerTrait;
+    use \Besnovatyj\Kernel\controller\ControllerTrait;
 
     private ShortcodeManageService $service;
     private ShortcodeRepository $repo;
