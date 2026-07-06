@@ -8,7 +8,7 @@
 use Besnovatyj\Backend\Widgets\grid\ActionColumn;
 use Besnovatyj\Shortcode\entities\Shortcode;
 use Besnovatyj\Shortcode\forms\search\ShortcodeSearch;
-use modules\user\components\Helper;
+use Besnovatyj\User\components\Helper;
 use yii\bootstrap5\Html;
 use Besnovatyj\Backend\Widgets\pagination\LinkPager;
 use yii\data\ActiveDataProvider;
