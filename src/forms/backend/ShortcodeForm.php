@@ -19,7 +19,7 @@ class ShortcodeForm extends Model
     public $example;
     private Shortcode|null $_shortcode = null;
 
-    public function __construct(Shortcode $shortcode = null, $config = [])
+    public function __construct(?Shortcode $shortcode = null, $config = [])
     {
         if ($shortcode) {
             $this->shortcode = $shortcode->shortcode;
