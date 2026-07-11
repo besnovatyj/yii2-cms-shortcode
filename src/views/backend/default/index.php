@@ -8,7 +8,7 @@
 use Besnovatyj\Backend\Widgets\grid\ActionColumn;
 use Besnovatyj\Shortcode\entities\Shortcode;
 use Besnovatyj\Shortcode\forms\search\ShortcodeSearch;
-use Besnovatyj\User\components\Helper;
+use Besnovatyj\Kernel\security\AccessHelper;
 use yii\bootstrap5\Html;
 use Besnovatyj\Backend\Widgets\pagination\LinkPager;
 use yii\data\ActiveDataProvider;
@@ -58,7 +58,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     'replacement',
                     [
                         'class' => ActionColumn::class,
-                        'template' => Helper::filterActionColumn(['view', 'update', 'delete']),
+                        'template' => AccessHelper::filterActionColumn(['view', 'update', 'delete']),
                     ],
                 ],
             ]) ?>
