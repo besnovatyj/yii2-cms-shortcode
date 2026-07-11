@@ -4,7 +4,7 @@
  * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
  */
 
-return [
+return [[
     'label' => 'Shortcodes',
     'iconClass' => 'bi bi-braces-asterisk me-1',
     'url' => ['/Shortcode/backend/default/index'],
@@ -22,4 +22,4 @@ return [
             ],
         ],
     ],
-];
+]];
