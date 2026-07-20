@@ -81,8 +81,13 @@ class ShortcodeContent extends Widget
      */
     private function processWidgetShortcodes(string $content): string
     {
+        // Разделитель между именем шорткода и атрибутами необязателен: допускаются
+        // запятая (`[videojs, ...]`), пробел (`[galleryOptima gallery_id=1]`) или
+        // полное отсутствие атрибутов (`[contactForm]`). Раньше запятая была
+        // обязательной, из-за чего бесатрибутные и пробел-разделённые шорткоды не
+        // распознавались и выводились как исходный текст.
         return preg_replace_callback(
-            '/\[(\w+),\s*([^\]]*)\](?:([\s\S]*?)\[\/\1\])?/',
+            '/\[(\w+)\s*,?\s*([^\]]*)\](?:([\s\S]*?)\[\/\1\])?/',
             function ($matches) {
                 $shortcode = $matches[1];
                 $attrString = trim($matches[2]);
