@@ -7,6 +7,7 @@
 
 namespace Besnovatyj\Shortcode\components;
 
+use Besnovatyj\Contracts\shortcode\ShortcodeTextResolver;
 use Besnovatyj\Shortcode\entities\Shortcode;
 use Besnovatyj\Shortcode\repositories\ShortcodeRepository;
 use Yii;
@@ -14,7 +15,7 @@ use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\helpers\Url;
 
-class ShortcodeManager extends Component
+class ShortcodeManager extends Component implements ShortcodeTextResolver
 {
     private array $widgetShortcodes = [];
     private array $textShortcodes = [];
@@ -90,6 +91,27 @@ class ShortcodeManager extends Component
     public function getTextReplacement(string $shortcode): ?string
     {
         return $this->textShortcodes[$shortcode] ?? null;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Разбор текстовых шорткодов `%name%` вынесен сюда из {@see \Besnovatyj\Shortcode\widgets\ShortcodeContent},
+     * чтобы значения можно было получать и внутри приложения, и в других модулях (например, для URL,
+     * хранимых доменно-независимо через `%staticHost%`), а не только при рендере контента виджетом.
+     */
+    public function resolveText(string $content): string
+    {
+        return preg_replace_callback(
+            '/%(\w+)%/',
+            function ($matches) {
+                // было - $shortcode = $matches[1]; и значение шорткода передавалось в метод поиска без оборачивающих процентов.
+                $shortcode = $matches[0];
+                $replacement = $this->getTextReplacement($shortcode);
+                return $replacement ?? $matches[0]; // Возвращаем исходный шорткод, если не найден
+            },
+            $content
+        );
     }
 
     /**

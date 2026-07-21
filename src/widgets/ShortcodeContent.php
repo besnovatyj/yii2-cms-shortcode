@@ -61,16 +61,9 @@ class ShortcodeContent extends Widget
      */
     private function processTextShortcodes(string $content): string
     {
-        return preg_replace_callback(
-            '/%(\w+)%/',
-            function ($matches) {
-                // было - $shortcode = $matches[1]; и значение шорткода передавалось в метод поиска без оборачивающих процентов.
-                $shortcode = $matches[0];
-                $replacement = $this->shortcodeManager->getTextReplacement($shortcode);
-                return $replacement ?? $matches[0]; // Возвращаем исходный шорткод, если не найден
-            },
-            $content
-        );
+        // Разбор текстовых шорткодов живёт в менеджере, чтобы значения можно было получать
+        // и вне рендера контента (внутри приложения и в других модулях).
+        return $this->shortcodeManager->resolveText($content);
     }
 
     /**
