@@ -17,10 +17,12 @@ use yii\db\StaleObjectException;
 class ShortcodeManageService
 {
     private ShortcodeRepository $repo;
+    private ShortcodeCatalog $catalog;
 
-    public function __construct(ShortcodeRepository $repo)
+    public function __construct(ShortcodeRepository $repo, ShortcodeCatalog $catalog)
     {
         $this->repo = $repo;
+        $this->catalog = $catalog;
     }
 
     /**
@@ -36,6 +38,7 @@ class ShortcodeManageService
             $form->example,
         );
         $this->repo->save($entity);
+        $this->catalog->invalidate();
         return $entity;
     }
 
@@ -54,6 +57,7 @@ class ShortcodeManageService
             $form->example,
         );
         $this->repo->save($entity);
+        $this->catalog->invalidate();
     }
 
     /**
@@ -64,5 +68,6 @@ class ShortcodeManageService
     {
         $test = $this->repo->get($id);
         $this->repo->remove($test);
+        $this->catalog->invalidate();
     }
 }

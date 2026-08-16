@@ -11,14 +11,15 @@ namespace Besnovatyj\Shortcode\readModels;
 use Besnovatyj\Shortcode\components\ShortcodeManager;
 use Besnovatyj\Shortcode\entities\Shortcode;
 use Besnovatyj\Shortcode\Module;
-use Besnovatyj\Shortcode\repositories\ShortcodeRepository;
+use Besnovatyj\Shortcode\services\ShortcodeCatalog;
 use Yii;
 
 /**
  * Сводный список всех доступных приложению шорткодов для справочных интерфейсов.
  *
  * Источников два, и они дополняют друг друга:
- *  - БД (через {@see ShortcodeRepository}) — даёт описание, пример вставки и `id` для ссылки на карточку;
+ *  - каталог {@see ShortcodeCatalog} (кэшированное чтение БД) — даёт описание, пример вставки и `id`
+ *    для ссылки на карточку;
  *  - {@see ShortcodeManager} — даёт шорткоды, зарегистрированные в рантайме (`%homeUrl%`, `%staticHost%`
  *    и всё, что модули регистрируют кодом). У них нет карточки в админке, но в подсказке они нужны.
  *
@@ -27,7 +28,7 @@ use Yii;
 final class ShortcodeListReadModel
 {
     public function __construct(
-        private readonly ShortcodeRepository $repository,
+        private readonly ShortcodeCatalog $catalog,
         private readonly ShortcodeManager $manager,
     ) {
     }
@@ -44,8 +45,8 @@ final class ShortcodeListReadModel
         // Тот же guard, что и в ShortcodeManager::init(): без зарегистрированного модуля таблицы
         // может не быть (виджет-подсказку способен вызвать сторонний модуль).
         if (Yii::$app->getModule(Module::moduleId()) !== null) {
-            foreach ($this->repository->findAllOrdered() as $entity) {
-                $items[$entity->shortcode] = ShortcodeItem::fromEntity($entity);
+            foreach ($this->catalog->rows() as $row) {
+                $items[(string)$row['shortcode']] = ShortcodeItem::fromRow($row);
             }
         }
 

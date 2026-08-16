@@ -41,20 +41,26 @@ final readonly class ShortcodeItem
     }
 
     /**
-     * Сборка из сущности. Пустой `example` подменяется синтаксически корректной заготовкой,
-     * чтобы кнопка «копировать» никогда не отдавала пустую строку.
+     * Сборка из строки каталога ({@see \Besnovatyj\Shortcode\services\ShortcodeCatalog::rows()}).
+     *
+     * Пустой `example` подменяется синтаксически корректной заготовкой, чтобы кнопка «копировать»
+     * никогда не отдавала пустую строку.
+     *
+     * @param array{id:int|string,shortcode:string,type:string,replacement:string,description:?string,example:?string} $row
      */
-    public static function fromEntity(Shortcode $entity): self
+    public static function fromRow(array $row): self
     {
-        $example = trim((string)$entity->example);
+        $shortcode = (string)$row['shortcode'];
+        $type = (string)$row['type'];
+        $example = trim((string)($row['example'] ?? ''));
 
         return new self(
-            shortcode: $entity->shortcode,
-            type: $entity->type,
-            replacement: (string)$entity->replacement,
-            description: trim((string)$entity->description),
-            example: $example !== '' ? $example : self::defaultExample($entity->shortcode, $entity->type),
-            id: (int)$entity->id,
+            shortcode: $shortcode,
+            type: $type,
+            replacement: (string)$row['replacement'],
+            description: trim((string)($row['description'] ?? '')),
+            example: $example !== '' ? $example : self::defaultExample($shortcode, $type),
+            id: (int)$row['id'],
         );
     }
 

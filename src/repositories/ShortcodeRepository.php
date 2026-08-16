@@ -51,14 +51,18 @@ class ShortcodeRepository
     }
 
     /**
-     * Все шорткоды в порядке, пригодном для справочного вывода: сначала по типу, внутри — по имени.
+     * Все шорткоды строками-массивами: сначала по типу, внутри — по имени.
      *
-     * @return Shortcode[]
+     * Массивы, а не AR-объекты, потому что результат кладётся в кэш каталога
+     * ({@see \Besnovatyj\Shortcode\services\ShortcodeCatalog}) — модели там хранить незачем.
+     *
+     * @return list<array{id:int|string,shortcode:string,type:string,replacement:string,description:?string,example:?string}>
      */
-    public function findAllOrdered(): array
+    public function findAllRows(): array
     {
         return Shortcode::find()
             ->orderBy(['type' => SORT_ASC, 'shortcode' => SORT_ASC])
+            ->asArray()
             ->all();
     }
 }

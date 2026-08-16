@@ -9,7 +9,8 @@ namespace Besnovatyj\Shortcode\components;
 
 use Besnovatyj\Contracts\shortcode\ShortcodeTextResolver;
 use Besnovatyj\Shortcode\entities\Shortcode;
-use Besnovatyj\Shortcode\repositories\ShortcodeRepository;
+use Besnovatyj\Shortcode\Module;
+use Besnovatyj\Shortcode\services\ShortcodeCatalog;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
@@ -20,23 +21,26 @@ class ShortcodeManager extends Component implements ShortcodeTextResolver
     private array $widgetShortcodes = [];
     private array $textShortcodes = [];
 
+    /**
+     * Каталог приходит из DI-контейнера: компонент поднимается через `Yii::createObject()`,
+     * поэтому зависимость в конструкторе резолвится так же, как у сервисов.
+     */
+    public function __construct(private readonly ShortcodeCatalog $catalog, $config = [])
+    {
+        parent::__construct($config);
+    }
+
     public function init(): void
     {
         parent::init();
 
-        if (!Yii::$app->getModule('Shortcode')) {
+        if (!Yii::$app->getModule(Module::moduleId())) {
             return;
         }
 
-        $repo = new ShortcodeRepository();
-
-        foreach ($repo->findAll(Shortcode::TYPE_WIDGET) as $item) {
-            $this->widgetShortcodes[$item->shortcode] = $item->replacement;
-        }
-
-        foreach ($repo->findAll(Shortcode::TYPE_TEXT) as $item) {
-            $this->textShortcodes[$item->shortcode] = $item->replacement;
-        }
+        // Обе карты читаются из общего кэша каталога — на горячем пути запроса к БД нет.
+        $this->widgetShortcodes = $this->catalog->replacements(Shortcode::TYPE_WIDGET);
+        $this->textShortcodes = $this->catalog->replacements(Shortcode::TYPE_TEXT);
 
         $this->textShortcodes = array_merge(
             $this->textShortcodes,
