@@ -8,7 +8,6 @@ declare(strict_types=1);
 
 use Besnovatyj\Shortcode\components\ShortcodeManager;
 use Besnovatyj\Shortcode\Module;
-use yii\base\InvalidConfigException;
 
 /**
  * Yii2-конфиг модуля для движка yiisoft/config (группа `common` — общий для всех приложений).
@@ -17,11 +16,12 @@ use yii\base\InvalidConfigException;
  * Содержит регистрацию модуля и его компоненты. Меню (adminMenu) и миграции остаются вкладами modman.
  * Значения берутся из статических методов {@see Module} — единый источник, без дублирования.
  *
- * Дополнительно вкладывает DI-биндинг типа {@see ShortcodeManager} на компонент приложения
- * `shortcode`. Без него контейнер, встретив тип в конструкторе (виджеты, read-модели), собрал бы
- * ВТОРОЙ экземпляр менеджера: лишний запрос к БД на каждый рендер и, что важнее, потеря шорткодов,
- * которые другие модули регистрируют в рантайме на компоненте приложения. Биндинг ленивый —
- * компонент поднимается только когда его действительно попросят.
+ * NB: биндинг `container.definitions[ShortcodeManager::class] => Yii::$app->get('shortcode')` сюда
+ * добавлять НЕЛЬЗЯ — получается бесконечная рекурсия: ServiceLocator резолвит компонент через
+ * `Yii::createObject(['class' => ShortcodeManager::class])`, то есть через тот же контейнер, и
+ * определение вызывает само себя. Цена второго экземпляра менеджера снята иначе — общим кэшем
+ * каталога шорткодов ({@see \Besnovatyj\Shortcode\services\ShortcodeCatalog}), поэтому лишней
+ * работы с БД он не делает.
  */
 return [
     'modules' => [
@@ -30,22 +30,6 @@ return [
             Module::moduleConfig(),
             ['version' => Module::moduleVersion()],
         ),
-    ],
-    'container' => [
-        'definitions' => [
-            ShortcodeManager::class => static function (): ShortcodeManager {
-                $component = Yii::$app->get(Module::COMPONENT_ID);
-                if (!$component instanceof ShortcodeManager) {
-                    throw new InvalidConfigException(sprintf(
-                        'Компонент приложения "%s" должен быть экземпляром %s.',
-                        Module::COMPONENT_ID,
-                        ShortcodeManager::class,
-                    ));
-                }
-
-                return $component;
-            },
-        ],
     ],
     'components' => Module::components(),
 ];
