@@ -49,4 +49,16 @@ class ShortcodeRepository
     {
         return Shortcode::findAll(['type' => $type]);
     }
+
+    /**
+     * Все шорткоды в порядке, пригодном для справочного вывода: сначала по типу, внутри — по имени.
+     *
+     * @return Shortcode[]
+     */
+    public function findAllOrdered(): array
+    {
+        return Shortcode::find()
+            ->orderBy(['type' => SORT_ASC, 'shortcode' => SORT_ASC])
+            ->all();
+    }
 }

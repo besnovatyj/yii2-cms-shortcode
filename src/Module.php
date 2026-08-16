@@ -22,6 +22,10 @@ class Module extends CmsModule implements
     public const bool EDITABLE = true;
     public const string VERSION = '1.0.0';
     public const string MODULE_ID = 'Shortcode';
+
+    /** Имя компонента приложения, под которым регистрируется {@see ShortcodeManager}. */
+    public const string COMPONENT_ID = 'shortcode';
+
     public function init(): void
     {
         parent::init();
@@ -43,5 +47,5 @@ class Module extends CmsModule implements
     public static function moduleConfig(): array { return require __DIR__.'/config/config.php'; }
     public static function migrationPath(): string       { return __DIR__.'/migrations'; }
     public static function migrationNamespace(): ?string { return __NAMESPACE__.'\\migrations'; }
-    public static function components(): array      { return ['shortcode' => ['class' => ShortcodeManager::class]]; }
+    public static function components(): array      { return [self::COMPONENT_ID => ['class' => ShortcodeManager::class]]; }
 }
