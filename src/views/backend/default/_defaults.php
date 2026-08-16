@@ -5,7 +5,7 @@
  * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
  */
 
-use Besnovatyj\Shortcode\widgets\ShortcodesList;
+use Besnovatyj\Shortcode\widgets\shortcodesList\ShortcodesList;
 
 ?>
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">

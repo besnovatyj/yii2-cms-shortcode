@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace Besnovatyj\Shortcode\widgets;
+namespace Besnovatyj\Shortcode\widgets\shortcodesList;
 
 use Besnovatyj\Kernel\security\AccessHelper;
 use Besnovatyj\Shortcode\entities\Shortcode;
@@ -31,16 +31,15 @@ use yii\helpers\Url;
  *
  * Пример использования:
  * ```php
- * echo \Besnovatyj\Shortcode\widgets\ShortcodesList::widget();
- * echo \Besnovatyj\Shortcode\widgets\ShortcodesList::widget([
+ * echo \Besnovatyj\Shortcode\widgets\shortcodesList\ShortcodesList::widget();
+ * echo \Besnovatyj\Shortcode\widgets\shortcodesList\ShortcodesList::widget([
  *     'buttonLabel' => 'Справка по шорткодам',
  *     'buttonClass' => 'btn btn-outline-secondary',
  * ]);
  * ```
  *
- * Класс намеренно остался в `widgets/` (а не переехал в подпапку `widgets/shortcodesList/`),
- * чтобы не ломать FQCN, на который уже ссылаются вьюхи других модулей; вьюха и ассеты виджета
- * лежат рядом по конвенции пакета.
+ * Всё, что относится к виджету, лежит в его подкаталоге: класс, `views/`, `assets/` и `media/`
+ * с исходниками TypeScript/CSS и собранным бандлом.
  */
 class ShortcodesList extends Widget
 {
@@ -75,7 +74,7 @@ class ShortcodesList extends Widget
 
         $groups = $this->readModel->grouped();
 
-        return $this->render('shortcodes-list', [
+        return $this->render('modal', [
             'widgets' => $groups[Shortcode::TYPE_WIDGET],
             'texts' => $groups[Shortcode::TYPE_TEXT],
             'total' => count($groups[Shortcode::TYPE_WIDGET]) + count($groups[Shortcode::TYPE_TEXT]),
