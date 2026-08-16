@@ -29,7 +29,9 @@ class Module extends CmsModule implements
     public function init(): void
     {
         parent::init();
-        $this->params = [
+        // Именно merge, а не присваивание: params из config.php (iconClass, endpoints очистки) должны
+        // пережить инициализацию модуля — их читают админ-панель и ClearManager уже у экземпляра.
+        $this->params = array_merge($this->params, [
             // TODO зададим здесь глобальные шорткоды, которые будем использовать во всём приложении.
             //  Или в настройках компонента, ниже, в методе `getComponentsConfig()`?
             'replaceParams' => [
@@ -37,7 +39,7 @@ class Module extends CmsModule implements
                 '%staticHost%' => Yii::$app->params['staticHostName'],
                 '%frontendHost%' => Yii::$app->params['frontendHostName'],
             ],
-        ];
+        ]);
     }
 
     public static function moduleId(): string { return self::MODULE_ID; }

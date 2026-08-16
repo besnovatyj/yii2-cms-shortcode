@@ -12,7 +12,7 @@ use Besnovatyj\Shortcode\entities\Shortcode;
 
 /**
  * Неизменяемое представление одного шорткода для справочных интерфейсов
- * (виджет-подсказка {@see \Besnovatyj\Shortcode\widgets\ShortcodesList}).
+ * (виджет-подсказка {@see \Besnovatyj\Shortcode\widgets\shortcodesList\ShortcodesList}).
  *
  * Зачем отдельный тип, а не сущность {@see Shortcode}: в справку попадают не только записи БД,
  * но и шорткоды, зарегистрированные в рантайме через

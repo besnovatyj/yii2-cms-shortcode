@@ -62,10 +62,10 @@
 пример прямо из формы редактирования контента, не уходя в модуль шорткодов.
 
 ```php
-echo \Besnovatyj\Shortcode\widgets\ShortcodesList::widget();
+echo \Besnovatyj\Shortcode\widgets\shortcodesList\ShortcodesList::widget();
 
 // Настройки под конкретную страницу
-echo \Besnovatyj\Shortcode\widgets\ShortcodesList::widget([
+echo \Besnovatyj\Shortcode\widgets\shortcodesList\ShortcodesList::widget([
     'buttonLabel'    => 'Справка по шорткодам',
     'buttonClass'    => 'btn btn-outline-secondary btn-sm',
     'buttonIcon'     => 'bi bi-braces',
@@ -83,7 +83,8 @@ echo \Besnovatyj\Shortcode\widgets\ShortcodesList::widget([
 - шорткоды, зарегистрированные в коде (`registerText`/`registerWidget`), помечены бейджем «в коде» —
   у них нет записи в БД, поэтому нет и ссылок на модуль.
 
-Клиентская часть виджета — TypeScript, сборка ESBuild:
+Всё, что относится к виджету, лежит в `src/widgets/shortcodesList/`: класс, `views/`, `assets/`
+и `media/` с исходниками и бандлом. Клиентская часть — TypeScript, сборка ESBuild:
 
 ```bash
 cd src/widgets/shortcodesList/media
@@ -91,3 +92,15 @@ npm install
 npm run build      # dist/index.js + dist/index.css
 npm run typecheck
 ```
+
+### Кэш каталога шорткодов
+
+Шорткоды читаются из БД один раз и живут в кэше (APCu) одним элементом с тегом `shortcodes` —
+см. `services/ShortcodeCatalog`. Из этого кэша берут данные и компонент `shortcode`
+(замены на горячем пути рендера контента), и виджет-справочник.
+
+Инвалидация автоматическая: `ShortcodeManageService` сбрасывает тег при создании, изменении и
+удалении шорткода. Вручную кэш сбрасывается из модуля очистки (ClearManager) — строка
+«Кэш каталога шорткодов»; эндпойнты объявлены в `config/config.php` (`params.endpoints.clear`),
+обработчик — `controllers/backend/ClearController`. Жёсткой зависимости от ClearManager нет:
+без него параметры просто никем не читаются.

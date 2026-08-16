@@ -12,7 +12,7 @@ use yii\bootstrap5\BootstrapPluginAsset;
 use yii\web\AssetBundle;
 
 /**
- * Ассеты справочника шорткодов {@see \Besnovatyj\Shortcode\widgets\ShortcodesList}.
+ * Ассеты справочника шорткодов {@see \Besnovatyj\Shortcode\widgets\shortcodesList\ShortcodesList}.
  *
  * Зависимость от {@see BootstrapPluginAsset} не декоративная: виджет — модалка, а наш скрипт
  * подписывается на событие `shown.bs.modal`, поэтому JS бандла обязан грузиться после Bootstrap.
