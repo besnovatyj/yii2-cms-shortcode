@@ -12,8 +12,6 @@ use Besnovatyj\Contracts\module\DeclaresModule;
 use Besnovatyj\Contracts\module\ProvidesComponents;
 use Besnovatyj\Contracts\module\ProvidesMigrations;
 use Besnovatyj\Contracts\module\ProvidesAdminMenu;
-use Yii;
-use yii\helpers\Url;
 
 class Module extends CmsModule implements
     DeclaresModule, ProvidesComponents,
@@ -26,28 +24,12 @@ class Module extends CmsModule implements
     /** Имя компонента приложения, под которым регистрируется {@see ShortcodeManager}. */
     public const string COMPONENT_ID = 'shortcode';
 
-    public function init(): void
-    {
-        parent::init();
-        // Именно merge, а не присваивание: params из config.php (iconClass, endpoints очистки) должны
-        // пережить инициализацию модуля — их читают админ-панель и ClearManager уже у экземпляра.
-        $this->params = array_merge($this->params, [
-            // TODO зададим здесь глобальные шорткоды, которые будем использовать во всём приложении.
-            //  Или в настройках компонента, ниже, в методе `getComponentsConfig()`?
-            'replaceParams' => [
-                '%homeUrl%' => Url::home(),
-                '%staticHost%' => Yii::$app->params['staticHostName'],
-                '%frontendHost%' => Yii::$app->params['frontendHostName'],
-            ],
-        ]);
-    }
-
     public static function moduleId(): string { return self::MODULE_ID; }
     public static function moduleVersion(): string { return self::VERSION; }
     public static function isEditable(): bool { return self::EDITABLE; }
-    public static function adminMenu(): array       { return require __DIR__.'/config/adminMenu.php'; }
+    public static function adminMenu(): array { return require __DIR__.'/config/adminMenu.php'; }
     public static function moduleConfig(): array { return require __DIR__.'/config/config.php'; }
-    public static function migrationPath(): string       { return __DIR__.'/migrations'; }
+    public static function migrationPath(): string { return __DIR__.'/migrations'; }
     public static function migrationNamespace(): ?string { return __NAMESPACE__.'\\migrations'; }
-    public static function components(): array      { return [self::COMPONENT_ID => ['class' => ShortcodeManager::class]]; }
+    public static function components(): array { return [self::COMPONENT_ID => ['class' => ShortcodeManager::class]]; }
 }

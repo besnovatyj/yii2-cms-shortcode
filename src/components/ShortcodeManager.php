@@ -15,6 +15,7 @@ use Yii;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\helpers\Url;
+use yii\web\Application;
 
 class ShortcodeManager extends Component implements ShortcodeTextResolver
 {
@@ -44,8 +45,8 @@ class ShortcodeManager extends Component implements ShortcodeTextResolver
 
         $this->textShortcodes = array_merge(
             $this->textShortcodes,
+            Yii::$app instanceof Application ? ['%homeUrl%' => Url::home()] : [],
             [
-                '%homeUrl%' => Url::home(),
                 '%staticHost%' => Yii::$app->params['staticHostName'],
                 '%frontendHost%' => Yii::$app->params['frontendHostName'],
             ]
