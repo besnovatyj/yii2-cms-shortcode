@@ -13,7 +13,8 @@ use Besnovatyj\Shortcode\Module;
  * Yii2-конфиг модуля для движка yiisoft/config (группа `common` — общий для всех приложений).
  *
  * Объявляется через `extra.config-plugin`, собирается modman в merge-plan и мёржится в рантайме.
- * Содержит регистрацию модуля и его компоненты. Меню (adminMenu) и миграции остаются вкладами modman.
+ * Содержит регистрацию модуля и его компоненты.
+ * Меню админки — `adminMenu.php` (группа `admin-menu`), миграции — вклад modman.
  * Значения берутся из статических методов {@see Module} — единый источник, без дублирования.
  *
  * NB: биндинг `container.definitions[ShortcodeManager::class] => Yii::$app->get('shortcode')` сюда
