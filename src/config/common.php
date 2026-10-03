@@ -29,7 +29,6 @@ return [
         Module::moduleId() => array_merge(
             ['class' => Module::class],
             Module::moduleConfig(),
-            ['version' => Module::moduleVersion()],
         ),
     ],
     'components' => Module::components(),
