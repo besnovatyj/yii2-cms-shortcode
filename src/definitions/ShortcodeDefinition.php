@@ -10,6 +10,7 @@ namespace Besnovatyj\Shortcode\definitions;
 
 use Besnovatyj\Shortcode\entities\Shortcode;
 use InvalidArgumentException;
+use yii\base\InvalidConfigException;
 
 /** Полное неизменяемое определение; значение всегда является конечным результатом. */
 final readonly class ShortcodeDefinition
@@ -88,6 +89,13 @@ final readonly class ShortcodeDefinition
     /** Восстанавливает определение из строки каталога БД. */
     public static function fromRow(array $row): self
     {
+        if (!array_key_exists('reverse_mode', $row)) {
+            throw new InvalidConfigException(
+                'В данных каталога шорткодов отсутствует reverse_mode. '
+                . 'Примените миграцию Shortcode m261115_000001_add_shortcode_reverse_mode через modman '
+                . 'и обновите кэш каталога.',
+            );
+        }
         return new self(
             shortcode: (string)$row['shortcode'],
             type: (string)$row['type'],

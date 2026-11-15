@@ -5,6 +5,8 @@
  * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
  */
 
+declare(strict_types=1);
+
 namespace Besnovatyj\Shortcode\repositories;
 
 use Besnovatyj\Shortcode\entities\Shortcode;
@@ -12,6 +14,7 @@ use Besnovatyj\Shortcode\repositories\NotFoundException;
 use RuntimeException;
 use Throwable;
 use yii\db\Exception;
+use yii\base\InvalidConfigException;
 use yii\db\StaleObjectException;
 
 class ShortcodeRepository
@@ -60,9 +63,25 @@ class ShortcodeRepository
      */
     public function findAllRows(): array
     {
-        return Shortcode::find()
-            ->orderBy(['type' => SORT_ASC, 'shortcode' => SORT_ASC])
-            ->asArray()
-            ->all();
+        try {
+            // Явный контракт проекции: старая схема должна дать ошибку SQL до записи в кэш,
+            // а не неполную строку SELECT *, приводящую позднее к Undefined array key.
+            return Shortcode::find()
+                ->select(['id', 'shortcode', 'type', 'replacement', 'reverse_mode', 'description', 'example'])
+                ->orderBy(['type' => SORT_ASC, 'shortcode' => SORT_ASC])
+                ->asArray()
+                ->all();
+        } catch (Exception $exception) {
+            $schema = Shortcode::getDb()->getTableSchema(Shortcode::tableName(), true);
+            if ($schema !== null && !isset($schema->columns['reverse_mode'])) {
+                throw new InvalidConfigException(
+                    'В таблице шорткодов отсутствует reverse_mode. '
+                    . 'Примените миграцию Shortcode m261115_000001_add_shortcode_reverse_mode через modman.',
+                    0,
+                    $exception,
+                );
+            }
+            throw $exception;
+        }
     }
 }

@@ -53,12 +53,39 @@ final class ShortcodeCatalog
             return $this->loadedRows = $this->repository->findAllRows();
         }
 
-        return $this->loadedRows = Yii::$app->cache->getOrSet(
+        $rows = Yii::$app->cache->getOrSet(
             self::CACHE_KEY,
             fn(): array => $this->repository->findAllRows(),
             null,
             new TagDependency(['tags' => [self::CACHE_TAG]]),
         );
+        if (!$this->hasCurrentFormat($rows)) {
+            // При обновлении мог сохраниться каталог, заполненный до применения миграции.
+            // Удаляем только этот элемент: reverse нельзя угадывать по неполным данным.
+            Yii::$app->cache->delete(self::CACHE_KEY);
+            $rows = $this->repository->findAllRows();
+            Yii::$app->cache->set(
+                self::CACHE_KEY,
+                $rows,
+                null,
+                new TagDependency(['tags' => [self::CACHE_TAG]]),
+            );
+        }
+        return $this->loadedRows = $rows;
+    }
+
+    /** Проверяет версию строк кэша, не подменяя отсутствующую политику reverse. */
+    private function hasCurrentFormat(mixed $rows): bool
+    {
+        if (!is_array($rows)) {
+            return false;
+        }
+        foreach ($rows as $row) {
+            if (!is_array($row) || !array_key_exists('reverse_mode', $row)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

@@ -13,6 +13,9 @@ use Besnovatyj\Shortcode\entities\Shortcode;
 use Besnovatyj\Shortcode\forms\backend\ShortcodeForm;
 use Besnovatyj\Shortcode\readModels\ShortcodeListReadModel;
 use Besnovatyj\Shortcode\services\ShortcodeManageService;
+use Besnovatyj\Shortcode\services\ShortcodeCatalog;
+use Besnovatyj\Shortcode\repositories\ShortcodeRepository;
+use yii\base\InvalidConfigException;
 use Besnovatyj\Shortcode\services\ShortcodeRegistry;
 use yii\console\Application;
 use yii\di\Container;
@@ -71,9 +74,30 @@ $config['components']['log'] = ['class' => yii\log\Dispatcher::class, 'targets' 
 $config['components']['db']['schemaMap'] = ['sqlite' => TestSqliteSchema::class];
 $app = new Application($config);
 $app->db->createCommand('CREATE TABLE shortcode_shortcodes (id INTEGER PRIMARY KEY AUTOINCREMENT, shortcode VARCHAR(255) UNIQUE, type VARCHAR(255), replacement TEXT, description TEXT, example TEXT)')->execute();
+// Воспроизводим запрос до обновления схемы и строку старого формата.
+$app->db->createCommand()->insert('shortcode_shortcodes', [
+    'shortcode' => '%legacy%', 'type' => 'text', 'replacement' => 'Legacy',
+    'description' => '', 'example' => '',
+])->execute();
+$legacyRow = $app->db->createCommand('SELECT * FROM shortcode_shortcodes')->queryOne();
+$repository = Yii::$container->get(ShortcodeRepository::class);
+try {
+    $repository->findAllRows();
+    throw new RuntimeException('Старая схема должна быть явно отклонена.');
+} catch (InvalidConfigException $exception) {
+    check(str_contains($exception->getMessage(), 'm261115_000001'), 'Нет указания на нужную миграцию.');
+}
+rejects(fn () => ShortcodeDefinition::fromRow($legacyRow), InvalidConfigException::class);
 require dirname(__DIR__) . '/src/migrations/m261115_000001_add_shortcode_reverse_mode.php';
 $migration = new Besnovatyj\Shortcode\migrations\m261115_000001_add_shortcode_reverse_mode(['db' => $app->db, 'compact' => true]);
 $migration->safeUp();
+// Даже под текущим ключом мог сохраниться результат SELECT * до применения миграции.
+$app->cache->set(ShortcodeCatalog::CACHE_KEY, [$legacyRow]);
+$rows = Yii::$container->get(ShortcodeCatalog::class)->rows();
+check($rows[0]['reverse_mode'] === 'none', 'Старый каталог не перечитан из обновлённой БД.');
+check($app->cache->get(ShortcodeCatalog::CACHE_KEY)[0]['reverse_mode'] === 'none', 'Кэш не заменён новым форматом.');
+check(ShortcodeDefinition::fromRow($rows[0])->reverseMode === ReverseMode::None, 'Значение миграции потеряно.');
+
 
 $manager = $app->shortcode;
 check($manager === Yii::$container->get(ShortcodeManager::class), 'Компонент и DI должны совпадать.');
@@ -127,4 +151,4 @@ Yii::configure(Yii::$container, $config['container']);
 $fromDi = Yii::$container->get(ShortcodeManager::class);
 $app->set('shortcode', ['class' => ShortcodeManager::class]);
 check($app->shortcode === $fromDi, 'DI-first создаёт другой компонент.');
-echo "OK: singleton, registry, priority, validation, CRUD, read model, migration up/down.\n";
+echo "OK: singleton, registry, priority, validation, CRUD, read model, migration up/down, pre-migration schema, stale cache recovery.\n";
