@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 use Besnovatyj\Shortcode\components\ShortcodeManager;
 use Besnovatyj\Shortcode\Module;
+use Besnovatyj\Shortcode\services\ShortcodeRegistry;
+use Besnovatyj\Shortcode\services\ShortcodeCatalog;
 
 /**
  * Yii2-конфиг модуля для движка yiisoft/config (группа `common` — общий для всех приложений).
@@ -31,5 +33,12 @@ return [
             Module::moduleConfig(),
         ),
     ],
+    // Историческое пояснение выше сохранено. Теперь оба пути получают singleton по классу;
+    // привязки класса обратно к ServiceLocator по-прежнему нет.
+    'container' => ['singletons' => [
+        ShortcodeCatalog::class => ShortcodeCatalog::class,
+        ShortcodeRegistry::class => ShortcodeRegistry::class,
+        ShortcodeManager::class => ShortcodeManager::class,
+    ]],
     'components' => Module::components(),
 ];

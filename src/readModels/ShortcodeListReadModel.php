@@ -10,9 +10,8 @@ namespace Besnovatyj\Shortcode\readModels;
 
 use Besnovatyj\Shortcode\components\ShortcodeManager;
 use Besnovatyj\Shortcode\entities\Shortcode;
-use Besnovatyj\Shortcode\Module;
 use Besnovatyj\Shortcode\services\ShortcodeCatalog;
-use Yii;
+use Besnovatyj\Shortcode\services\ShortcodeRegistry;
 
 /**
  * Сводный список всех доступных приложению шорткодов для справочных интерфейсов.
@@ -27,9 +26,9 @@ use Yii;
  */
 final class ShortcodeListReadModel
 {
+    /** Использует общий эффективный набор, а не собственную логику приоритетов. */
     public function __construct(
-        private readonly ShortcodeCatalog $catalog,
-        private readonly ShortcodeManager $manager,
+        private readonly ShortcodeRegistry $registry,
     ) {
     }
 
@@ -40,28 +39,13 @@ final class ShortcodeListReadModel
      */
     public function all(): array
     {
-        $items = [];
-
         // Тот же guard, что и в ShortcodeManager::init(): без зарегистрированного модуля таблицы
         // может не быть (виджет-подсказку способен вызвать сторонний модуль).
-        if (Yii::$app->getModule(Module::moduleId()) !== null) {
-            foreach ($this->catalog->rows() as $row) {
-                $items[(string)$row['shortcode']] = ShortcodeItem::fromRow($row);
-            }
-        }
-
-        $items = $this->appendRuntime($items, $this->manager->getWidgetShortcodes(), Shortcode::TYPE_WIDGET);
-        $items = $this->appendRuntime($items, $this->manager->getTextShortcodes(), Shortcode::TYPE_TEXT);
-
-        $items = array_values($items);
-        usort($items, static fn(ShortcodeItem $a, ShortcodeItem $b): int => [
-            $a->isWidget() ? 0 : 1,
-            mb_strtolower($a->shortcode),
-        ] <=> [
-            $b->isWidget() ? 0 : 1,
-            mb_strtolower($b->shortcode),
-        ]);
-
+        // Guard и приоритет источников теперь централизованы в реестре.
+        $items = array_map(ShortcodeItem::fromDefinition(...), array_values($this->registry->all()));
+        usort($items, static fn (ShortcodeItem $a, ShortcodeItem $b): int => [
+            $a->isWidget() ? 0 : 1, mb_strtolower($a->shortcode),
+        ] <=> [$b->isWidget() ? 0 : 1, mb_strtolower($b->shortcode)]);
         return $items;
     }
 
@@ -81,31 +65,4 @@ final class ShortcodeListReadModel
         return $groups;
     }
 
-    /**
-     * Добавление зарегистрированных в коде шорткодов, которых ещё нет в списке.
-     *
-     * @param array<string, ShortcodeItem> $items      Уже собранные элементы, ключ — имя шорткода
-     * @param array<string, string>        $registered Карта `шорткод => замена` из менеджера
-     * @param string                       $type       Тип добавляемых элементов
-     * @return array<string, ShortcodeItem>
-     */
-    private function appendRuntime(array $items, array $registered, string $type): array
-    {
-        foreach ($registered as $shortcode => $replacement) {
-            $shortcode = (string)$shortcode;
-            if (isset($items[$shortcode])) {
-                continue;
-            }
-
-            $items[$shortcode] = new ShortcodeItem(
-                shortcode: $shortcode,
-                type: $type,
-                replacement: (string)$replacement,
-                description: '',
-                example: ShortcodeItem::defaultExample($shortcode, $type),
-            );
-        }
-
-        return $items;
-    }
 }

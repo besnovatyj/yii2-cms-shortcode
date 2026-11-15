@@ -26,9 +26,13 @@ use yii\caching\TagDependency;
  */
 final class ShortcodeCatalog
 {
-    public const string CACHE_KEY = 'shortcode.catalog';
+    public const string CACHE_KEY = 'shortcode.catalog.v2';
     public const string CACHE_TAG = 'shortcodes';
 
+    /** Снимок строк на текущий запрос; инвалидируется вместе с общим кэшем. */
+    private ?array $loadedRows = null;
+
+    /** Получает репозиторий строк управляемых определений. */
     public function __construct(private readonly ShortcodeRepository $repository)
     {
     }
@@ -36,17 +40,20 @@ final class ShortcodeCatalog
     /**
      * Все шорткоды: сначала по типу, внутри — по имени.
      *
-     * @return list<array{id:int|string,shortcode:string,type:string,replacement:string,description:?string,example:?string}>
+     * @return list<array{id:int|string,shortcode:string,type:string,replacement:string,reverse_mode:string,description:?string,example:?string}>
      */
     public function rows(): array
     {
+        if ($this->loadedRows !== null) {
+            return $this->loadedRows;
+        }
         // Кэш может быть не сконфигурирован (например, в консоли) — тогда читаем напрямую:
         // корректность важнее скорости.
         if (!Yii::$app->has('cache') || Yii::$app->cache === null) {
-            return $this->repository->findAllRows();
+            return $this->loadedRows = $this->repository->findAllRows();
         }
 
-        return Yii::$app->cache->getOrSet(
+        return $this->loadedRows = Yii::$app->cache->getOrSet(
             self::CACHE_KEY,
             fn(): array => $this->repository->findAllRows(),
             null,
@@ -84,6 +91,7 @@ final class ShortcodeCatalog
      */
     public function invalidate(): void
     {
+        $this->loadedRows = null;
         if (Yii::$app->has('cache') && Yii::$app->cache !== null) {
             TagDependency::invalidate(Yii::$app->cache, [self::CACHE_TAG]);
         }

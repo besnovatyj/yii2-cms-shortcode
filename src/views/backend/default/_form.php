@@ -5,6 +5,8 @@
  * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
  */
 
+declare(strict_types=1);
+
 use Besnovatyj\Shortcode\forms\backend\ShortcodeForm;
 use yii\helpers\Html;
 use yii\bootstrap5\ActiveForm;
@@ -21,6 +23,10 @@ use yii\web\View;
     <div class="card-body">
         <?= $form->field($model, 'type')->dropDownList($model->typesList(), ['prompt' => 'Не выбрано', 'class' => 'custom-select']) ?>
         <?= $form->field($model, 'shortcode')->textInput(['maxlength' => true, 'class' => 'form-control']) ?>
+        <?= $form->field($model, 'reverse_mode')->dropDownList([
+            'none' => 'Отключено',
+            'url-prefix' => 'Префикс URL (только текстовые шорткоды)',
+        ])->hint('Определение из БД полностью переопределяет одноимённый шорткод из кода.') ?>
         <?= $form->field($model, 'replacement')->textInput(['maxlength' => true, 'class' => 'form-control']) ?>
         <?= $form->field($model, 'description')->textInput(['maxlength' => true, 'class' => 'form-control']) ?>
         <?= $form->field($model, 'example')->textInput(['maxlength' => true, 'class' => 'form-control']) ?>

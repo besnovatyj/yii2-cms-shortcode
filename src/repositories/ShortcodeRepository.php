@@ -56,7 +56,7 @@ class ShortcodeRepository
      * Массивы, а не AR-объекты, потому что результат кладётся в кэш каталога
      * ({@see \Besnovatyj\Shortcode\services\ShortcodeCatalog}) — модели там хранить незачем.
      *
-     * @return list<array{id:int|string,shortcode:string,type:string,replacement:string,description:?string,example:?string}>
+     * @return list<array{id:int|string,shortcode:string,type:string,replacement:string,reverse_mode:string,description:?string,example:?string}>
      */
     public function findAllRows(): array
     {

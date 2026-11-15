@@ -9,6 +9,8 @@ declare(strict_types=1);
 namespace Besnovatyj\Shortcode\readModels;
 
 use Besnovatyj\Shortcode\entities\Shortcode;
+use Besnovatyj\Shortcode\definitions\ShortcodeDefinition;
+use Besnovatyj\Shortcode\definitions\ReverseMode;
 
 /**
  * Неизменяемое представление одного шорткода для справочных интерфейсов
@@ -37,6 +39,7 @@ final readonly class ShortcodeItem
         public string $description,
         public string $example,
         public ?int $id = null,
+        public ReverseMode $reverseMode = ReverseMode::None,
     ) {
     }
 
@@ -46,22 +49,11 @@ final readonly class ShortcodeItem
      * Пустой `example` подменяется синтаксически корректной заготовкой, чтобы кнопка «копировать»
      * никогда не отдавала пустую строку.
      *
-     * @param array{id:int|string,shortcode:string,type:string,replacement:string,description:?string,example:?string} $row
+     * @param array{id:int|string,shortcode:string,type:string,replacement:string,reverse_mode:string,description:?string,example:?string} $row
      */
     public static function fromRow(array $row): self
     {
-        $shortcode = (string)$row['shortcode'];
-        $type = (string)$row['type'];
-        $example = trim((string)($row['example'] ?? ''));
-
-        return new self(
-            shortcode: $shortcode,
-            type: $type,
-            replacement: (string)$row['replacement'],
-            description: trim((string)($row['description'] ?? '')),
-            example: $example !== '' ? $example : self::defaultExample($shortcode, $type),
-            id: (int)$row['id'],
-        );
+        return self::fromDefinition(ShortcodeDefinition::fromRow($row));
     }
 
     /**
@@ -74,6 +66,21 @@ final readonly class ShortcodeItem
             : $shortcode;
     }
 
+    /** Преобразует уже выбранное эффективное определение, не объединяя источники. */
+    public static function fromDefinition(ShortcodeDefinition $definition): self
+    {
+        return new self(
+            $definition->shortcode,
+            $definition->type,
+            $definition->replacement,
+            $definition->description,
+            trim($definition->example) !== '' ? $definition->example : self::defaultExample($definition->shortcode, $definition->type),
+            $definition->id,
+            $definition->reverseMode,
+        );
+    }
+
+    /** Проверяет виджетный тип. */
     public function isWidget(): bool
     {
         return $this->type === Shortcode::TYPE_WIDGET;

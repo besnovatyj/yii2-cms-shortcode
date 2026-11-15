@@ -31,6 +31,7 @@ class ApiController extends Controller
 {
     public $enableCsrfValidation = false;
 
+    /** Внедряет общий список эффективных определений. */
     public function __construct(
         $id,
         $module,
@@ -40,6 +41,7 @@ class ApiController extends Controller
         parent::__construct($id, $module, $config);
     }
 
+    /** Формат JSON и допустимые HTTP-методы. */
     public function behaviors(): array
     {
         return [
@@ -58,7 +60,7 @@ class ApiController extends Controller
     /**
      * Список шорткодов: `{ items: [{ shortcode, type, description, example, replacement }] }`.
      *
-     * @return array{items: array<int, array<string, string>>}
+     * @return array{items: array<int, array<string, string|array{mode: string}>>}
      */
     public function actionList(): array
     {
@@ -70,7 +72,7 @@ class ApiController extends Controller
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, string|array{mode: string}>
      */
     private function itemToArray(ShortcodeItem $item): array
     {
@@ -80,6 +82,7 @@ class ApiController extends Controller
             'description' => $item->description,
             'example' => $item->example,
             'replacement' => $item->replacement,
+            'reverse' => ['mode' => $item->reverseMode->value],
         ];
     }
 }

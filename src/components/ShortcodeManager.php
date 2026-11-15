@@ -5,53 +5,37 @@
  * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
  */
 
+declare(strict_types=1);
+
 namespace Besnovatyj\Shortcode\components;
 
 use Besnovatyj\Contracts\shortcode\ShortcodeTextResolver;
 use Besnovatyj\Shortcode\entities\Shortcode;
-use Besnovatyj\Shortcode\Module;
-use Besnovatyj\Shortcode\services\ShortcodeCatalog;
-use Yii;
+use Besnovatyj\Shortcode\services\ShortcodeRegistry;
+use Besnovatyj\Shortcode\definitions\ShortcodeDefinition;
+use Besnovatyj\Shortcode\definitions\ReverseMode;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
-use yii\helpers\Url;
-use yii\web\Application;
 
+/** Совместимый фасад общего реестра и однопроходного раскрытия текста. */
 class ShortcodeManager extends Component implements ShortcodeTextResolver
 {
-    private array $widgetShortcodes = [];
-    private array $textShortcodes = [];
-
     /**
      * Каталог приходит из DI-контейнера: компонент поднимается через `Yii::createObject()`,
      * поэтому зависимость в конструкторе резолвится так же, как у сервисов.
+     * Теперь компонент получает общий реестр, который использует каталог без второго снимка.
      */
-    public function __construct(private readonly ShortcodeCatalog $catalog, $config = [])
+    public function __construct(private readonly ShortcodeRegistry $registry, array $config = [])
     {
         parent::__construct($config);
     }
 
+    /** Инициализация компонента без преждевременного чтения определений. */
     public function init(): void
     {
-        parent::init();
-
-        if (!Yii::$app->getModule(Module::moduleId())) {
-            return;
-        }
-
         // Обе карты читаются из общего кэша каталога — на горячем пути запроса к БД нет.
-        $this->widgetShortcodes = $this->catalog->replacements(Shortcode::TYPE_WIDGET);
-        $this->textShortcodes = $this->catalog->replacements(Shortcode::TYPE_TEXT);
-
-        $this->textShortcodes = array_merge(
-            $this->textShortcodes,
-            Yii::$app instanceof Application ? ['%homeUrl%' => Url::home()] : [],
-            [
-                '%staticHost%' => Yii::$app->params['staticHostName'],
-                '%frontendHost%' => Yii::$app->params['frontendHostName'],
-            ]
-        );
-
+        // Теперь загрузка лениво выполняется реестром, а обе карты строятся из одного набора.
+        parent::init();
     }
 
     /**
@@ -65,7 +49,7 @@ class ShortcodeManager extends Component implements ShortcodeTextResolver
         if (!class_exists($widgetClass)) {
             throw new InvalidConfigException("Widget class '$widgetClass' does not exist.");
         }
-        $this->widgetShortcodes[$shortcode] = $widgetClass;
+        $this->registry->register(new ShortcodeDefinition($shortcode, Shortcode::TYPE_WIDGET, $widgetClass));
     }
 
     /**
@@ -73,9 +57,13 @@ class ShortcodeManager extends Component implements ShortcodeTextResolver
      * @param string $shortcode Имя шорткода
      * @param string $replacement Текст для замены
      */
-    public function registerText(string $shortcode, string $replacement): void
+    public function registerText(
+        string $shortcode,
+        string $replacement,
+        ReverseMode $reverseMode = ReverseMode::None,
+    ): void
     {
-        $this->textShortcodes[$shortcode] = $replacement;
+        $this->registry->register(new ShortcodeDefinition($shortcode, Shortcode::TYPE_TEXT, $replacement, reverseMode: $reverseMode));
     }
 
     /**
@@ -85,7 +73,7 @@ class ShortcodeManager extends Component implements ShortcodeTextResolver
      */
     public function getWidgetClass(string $shortcode): ?string
     {
-        return $this->widgetShortcodes[$shortcode] ?? null;
+        return $this->getWidgetShortcodes()[$shortcode] ?? null;
     }
 
     /**
@@ -95,7 +83,7 @@ class ShortcodeManager extends Component implements ShortcodeTextResolver
      */
     public function getTextReplacement(string $shortcode): ?string
     {
-        return $this->textShortcodes[$shortcode] ?? null;
+        return $this->getTextShortcodes()[$shortcode] ?? null;
     }
 
     /**
@@ -107,12 +95,17 @@ class ShortcodeManager extends Component implements ShortcodeTextResolver
      */
     public function resolveText(string $content): string
     {
+        $replacements = $this->getTextShortcodes();
+        if ($replacements === []) {
+            return $content;
+        }
+        $pattern = '~' . implode('|', array_map(static fn (string $name): string => preg_quote($name, '~'), array_keys($replacements))) . '~';
         return preg_replace_callback(
-            '/%(\w+)%/',
-            function ($matches) {
+            $pattern,
+            function ($matches) use ($replacements) {
                 // было - $shortcode = $matches[1]; и значение шорткода передавалось в метод поиска без оборачивающих процентов.
                 $shortcode = $matches[0];
-                $replacement = $this->getTextReplacement($shortcode);
+                $replacement = $replacements[$shortcode] ?? null;
                 return $replacement ?? $matches[0]; // Возвращаем исходный шорткод, если не найден
             },
             $content
@@ -125,17 +118,34 @@ class ShortcodeManager extends Component implements ShortcodeTextResolver
      */
     public function loadTextShortcodes(array $shortcodes): void
     {
-        $this->textShortcodes = array_merge($this->textShortcodes, $shortcodes);
+        $definitions = [];
+        foreach ($shortcodes as $shortcode => $replacement) {
+            $definitions[] = new ShortcodeDefinition((string)$shortcode, Shortcode::TYPE_TEXT, (string)$replacement);
+        }
+        $this->registry->registerMany($definitions);
     }
 
+    /** Карта эффективных текстовых определений. */
     public function getTextShortcodes(): array
     {
-        return $this->textShortcodes;
+        return $this->replacements(Shortcode::TYPE_TEXT);
     }
 
+    /** Карта эффективных виджетных определений. */
     public function getWidgetShortcodes(): array
     {
-        return $this->widgetShortcodes;
+        return $this->replacements(Shortcode::TYPE_WIDGET);
     }
 
+    /** Строит карту из общего реестра без отдельного состояния в компоненте. */
+    private function replacements(string $type): array
+    {
+        $result = [];
+        foreach ($this->registry->all() as $definition) {
+            if ($definition->type === $type) {
+                $result[$definition->shortcode] = $definition->replacement;
+            }
+        }
+        return $result;
+    }
 }

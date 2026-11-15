@@ -6,7 +6,7 @@
    ```php
    'components' => [
        'shortcode' => [
-           'class' => 'modules\shortcode\components\ShortcodeManager',
+           'class' => \Besnovatyj\Shortcode\components\ShortcodeManager::class,
        ],
    ],
    ```
@@ -17,19 +17,19 @@
    \Yii::$app->shortcode->registerWidget('gallery', 'common\widgets\GalleryWidget');
 
    // Регистрация текстовых шорткодов
-   \Yii::$app->shortcode->registerText('homeUrl', 'https://example.com');
-   \Yii::$app->shortcode->registerText('siteName', 'My Site');
+   \Yii::$app->shortcode->registerText('%siteUrl%', 'https://example.com');
+   \Yii::$app->shortcode->registerText('%siteName%', 'My Site');
    ```
 
 3. **Использование в контенте**:
    ```php
-   echo \modules\shortcode\widgets\ShortcodeContent::widget([
-       'content' => 'Visit %siteName% at %homeUrl% or %unknown%. See our [gallery, id=123, title="Photos", count=5]Photos[/gallery] or [unknown, id="1"].',
+   echo \Besnovatyj\Shortcode\widgets\ShortcodeContent::widget([
+       'content' => 'Visit %siteName% at %siteUrl% or %unknown%. See our [gallery, id=123, title="Photos", count=5]Photos[/gallery] or [unknown, id="1"].',
    ]);
    ```
    **Результат**:
     - `%siteName%` → `My Site`.
-    - `%homeUrl%` → `https://example.com`.
+    - `%siteUrl%` → `https://example.com`.
     - `%unknown%` → `%unknown%` (исходная строка, так как шорткод не зарегистрирован).
     - `[gallery, id=123, title="Photos", count=5]Photos[/gallery]` → Вызов `GalleryWidget` с параметрами `id => 123` (число), `title => "Photos"`, `count => 5` (число) и внутренним контентом `Photos`.
     - `[unknown, id="1"]` → `[unknown, id="1"]` (исходная строка, так как виджет не зарегистрирован).
@@ -43,7 +43,7 @@
       }
       ```
 2. **Админка**:
-    - Для управления текстовыми шорткодами создайте модель и контроллер, чтобы загружать шорткоды через `loadTextShortcodes`.
+    - Управляемые определения создаются в форме модуля Shortcode. Они полностью переопределяют код; `loadTextShortcodes` предназначен для уникальных программных регистраций.
 3. **Логирование**:
     - Если нужно отслеживать неизвестные шорткоды, добавьте логирование:
       ```php
@@ -104,3 +104,44 @@ npm run typecheck
 «Кэш каталога шорткодов»; эндпойнты объявлены в `config/config.php` (`params.endpoints.clear`),
 обработчик — `controllers/backend/ClearController`. Жёсткой зависимости от ClearManager нет:
 без него параметры просто никем не читаются.
+
+
+## Единый реестр и переопределения
+
+Конфигурация модуля регистрирует менеджер и реестр как ленивые singleton Yii2. `Yii::$app->shortcode` и внедрение `ShortcodeManager` через конструктор используют один экземпляр в пределах запроса. Не связывайте определение класса обратно с `Yii::$app->get('shortcode')`: это вызывает рекурсию.
+
+Программные имена уникальны, включая встроенные `%staticHost%`, `%frontendHost%`, `%homeUrl%`. Повторная регистрация выбрасывает исключение, даже при одинаковом значении. `loadTextShortcodes()` регистрирует набор атомарно: ошибка не оставляет частично добавленные определения.
+
+Запись из БД полностью переопределяет программное определение: тип, значение, описание, пример и reverse. Поэтому в админке разрешено создать запись с программным именем и выключить для неё reverse. После удаления записи снова действует определение из кода. Программно переопределять существующее имя нельзя.
+
+Регистрации, необходимые API и frontend, выполняйте в общей инициализации соответствующих запросов. Регистрация при рендере конкретной формы не переносится в отдельный запрос API. Записи БД кэшируются отдельно от встроенных значений текущего приложения; CRUD инвалидирует кэш и снимок текущего запроса.
+
+## Выборочное обратное преобразование
+
+```php
+use Besnovatyj\Shortcode\definitions\ReverseMode;
+
+Yii::$app->shortcode->registerText(
+    '%assetHost%',
+    'https://assets.example.com',
+    ReverseMode::UrlPrefix,
+);
+```
+
+Обычный двухаргументный `registerText()` оставляет reverse выключенным. Встроенный `%staticHost%` разрешает `url-prefix`; `%frontendHost%` и `%homeUrl%` — нет. Настройка «Обратное преобразование» доступна в форме управления шорткодом. Для виджетного типа допустим только режим «Отключено».
+
+Значения текстовых шорткодов конечные: вложенные токены `%name%` запрещены. Имена текстовых шорткодов передаются с процентами; имя состоит из ASCII-букв, цифр и подчёркивания. Прямая подстановка однопроходная, неизвестные токены сохраняются.
+
+`url-prefix` принимает абсолютный HTTP(S)-адрес с необязательным путём, без credentials, query, fragment, dot-сегментов и пробельных/управляющих символов. Хост и порт должны иметь каноническую запись; поддерживается ASCII-хост, включая punycode. Завершающий слеш сохраняется как часть значения. Для одинаковых префиксов разных эффективных определений возникает ошибка; вложенные префиксы разрешены, редактор выбирает самый длинный.
+
+API `/Shortcode/backend/api/list` отдаёт эффективные определения с `reverse: {mode: "none" | "url-prefix"}`. В PHP модуль продолжает раскрывать токены при явном рендере через резолвер. Обратное преобразование URL перед сохранением или после чтения контента из БД не выполняется.
+
+## Обновление и проверки
+
+Сначала примените через modman новую миграцию `m261115_000001_add_shortcode_reverse_mode`, затем используйте обновлённый API и бандл редактора. Существующие записи получают `reverse_mode = none`; контент не переписывается. Откат новой миграции удаляет только столбец, а не таблицу.
+
+```sh
+php tests/registry.php
+```
+
+Проверка требует PHP 8.4+, PDO SQLite и mbstring, использует настоящий Yii2 и изолированную БД `sqlite::memory:`. Конфигурация и БД рабочего приложения не подключаются. Проверяются DI, дубликаты, приоритет БД, CRUD, read model и миграция up/down. Тестовый SQL builder адаптирует современный SQLite к операции DROP COLUMN; выполнение миграции на рабочем MySQL в этот тест не входит.
